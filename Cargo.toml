@@ -1,0 +1,11 @@
+[profile.release]
+lto = true
+opt-level = "s"
+debug = false
+panic = "abort"
+
+[workspace]
+members = [
+    "crates/contract",
+    "crates/website"
+]

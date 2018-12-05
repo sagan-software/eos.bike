@@ -1,0 +1,64 @@
+{
+	"version": "eosio::abi/1.0",
+	"types": [
+		{
+			"new_type_name": "slug",
+			"type": "name"
+		}
+	],
+	"structs": [
+		{
+			"name": "url",
+			"base": "",
+			"fields": [
+				{
+					"name": "id",
+					"type": "slug"
+				},
+				{
+					"name": "url",
+					"type": "string"
+				},
+				{
+					"name": "account",
+					"type": "account_name"
+				}
+			]
+		},
+		{
+			"name": "unshorten",
+			"base": "",
+			"fields": [
+				{
+					"name": "id",
+					"type": "slug"
+				},
+				{
+					"name": "account",
+					"type": "account_name"
+				}
+			]
+		}
+	],
+	"actions": [
+		{
+			"name": "shorten",
+			"type": "url",
+			"ricardian_contract": ""
+		},
+		{
+			"name": "unshorten",
+			"type": "unshorten",
+			"ricardian_contract": ""
+		}
+	],
+	"tables": [
+		{
+			"name": "urls",
+			"type": "url",
+			"index_type": "i64",
+			"key_names": [],
+			"key_types": []
+		}
+	]
+}
