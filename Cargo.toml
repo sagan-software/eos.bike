@@ -6,6 +6,6 @@ panic = "abort"
 
 [workspace]
 members = [
-    "crates/contract",
-    "crates/website"
+    "contract",
+    "web_client"
 ]
