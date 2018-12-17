@@ -10,7 +10,7 @@ build: contract web_client
 # Docker
 # ------------
 
-DOCKER_COMPOSE := docker-compose -f docker/docker-compose.yml
+DOCKER_COMPOSE := docker-compose -f contract/docker/docker-compose.yml
 CLEOS := $(DOCKER_COMPOSE) exec keosd cleos --url http://nodeosd:8888 --wallet-url http://127.0.0.1:8900
 PUBKEY := EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
 PRIVKEY := 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
@@ -22,7 +22,7 @@ docker-down:
 	docker volume rm -f keosd-data-volume
 
 .PHONY: docker
-docker-up: docker-down $(CONTRACT_DIST_DIR)
+docker-up: docker-down
 	docker volume create --name=nodeos-data-volume
 	docker volume create --name=keosd-data-volume
 	$(DOCKER_COMPOSE) up
@@ -61,25 +61,15 @@ $(TARGET_DIR)/%.wasm: %/**/* %/*
 # Contract
 # ------------
 
-CONTRACT_DIST_DIR := $(DIST_DIR)/contract
-CONTRACT_SRC_DIR := $(ROOT_DIR)/contract
+CONTRACT_DIR := $(ROOT_DIR)/contract
 
-$(CONTRACT_DIST_DIR):
-	mkdir -p $(CONTRACT_DIST_DIR)
-
-$(CONTRACT_DIST_DIR)/contract.wasm: \
+.PHONY: contract
+contract: \
 	$(TARGET_DIR)/contract.wasm \
 	$(TARGET_DIR)/contract_gc.wasm \
 	$(TARGET_DIR)/contract_gc_opt.wasm \
-	$(TARGET_DIR)/contract_gc_opt.wat \
-	$(CONTRACT_DIST_DIR)
-	cp $(TARGET_DIR)/contract_gc_opt.wasm $(CONTRACT_DIST_DIR)/contract.wasm
-
-$(CONTRACT_DIST_DIR)/contract.json: $(CONTRACT_DIST_DIR)
-	cp $(CONTRACT_SRC_DIR)/contract.json $(CONTRACT_DIST_DIR)
-
-.PHONY: contract
-contract: $(CONTRACT_DIST_DIR)/contract.wasm $(CONTRACT_DIST_DIR)/contract.json
+	$(TARGET_DIR)/contract_gc_opt.wat
+	cp $(TARGET_DIR)/contract_gc_opt.wasm $(CONTRACT_DIR)/contract.wasm
 
 .PHONY: deploy-contract
 deploy-contract: contract

@@ -52,7 +52,7 @@ services:
       - 8900:8900
     volumes:
       - keosd-data-volume:/opt/eosio/bin/data-dir
-      - ../target/dist/contract:/mnt/dev/contract:ro
+      - ../:/mnt/dev/contract:ro
       - ./:/mnt/dev/docker:ro
     links:
       - nodeosd
