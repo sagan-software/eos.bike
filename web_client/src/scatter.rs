@@ -170,7 +170,7 @@ mod bindings {
         pub fn suggest_network(this: &Scatter, network: JsValue) -> Promise;
 
         #[wasm_bindgen(method)]
-        pub fn eos(this: &Scatter, network: JsValue, eos: &JsValue, config: JsValue) -> Eos;
+        pub fn eos(this: &Scatter, network: JsValue, eos: &JsValue) -> Eos;
     }
 
     #[wasm_bindgen(module = "scatterjs-plugin-eosjs")]
@@ -195,6 +195,7 @@ mod bindings {
     }
 }
 
+#[derive(Clone)]
 pub struct Scatter<'s>(&'s bindings::Scatter);
 
 impl<'s> Scatter<'s> {
@@ -230,46 +231,11 @@ impl<'s> Scatter<'s> {
         &self,
         network: &Network,
         transaction: &Transaction,
-        config: &EosJsConfig,
     ) -> impl Future<Item = JsValue, Error = JsValue> {
         let network_value = JsValue::from_serde(network).unwrap();
-        let config_value = JsValue::from_serde(config).unwrap();
-        let eos = self
-            .0
-            .eos(network_value, &bindings::eos_constructor, config_value);
+        let eos = self.0.eos(network_value, &bindings::eos_constructor);
         let transaction_value = JsValue::from_serde(transaction).unwrap();
         let promise = eos.transaction(transaction_value);
         JsFuture::from(promise)
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct EosJsConfig<'a> {
-    #[serde(borrow)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub chain_id: Option<&'a str>,
-
-    #[serde(borrow)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub key_provider: Option<Vec<&'a str>>,
-
-    #[serde(borrow)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub http_endpoint: Option<&'a str>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expire_in_seconds: Option<u32>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub broadcast: Option<bool>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verbose: Option<bool>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub debug: Option<bool>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sign: Option<bool>,
 }

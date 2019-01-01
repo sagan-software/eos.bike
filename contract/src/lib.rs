@@ -34,25 +34,25 @@ pub fn is_valid_url(url: &str) -> bool {
 pub fn shorten(id: Slug, url: String, account: AccountName) {
     require_auth(account);
 
-    eosio_assert(is_valid_url(&url), "Invalid URL supplied");
+    check(is_valid_url(&url), "Invalid URL supplied");
 
     let _self = AccountName::receiver();
     let table = Url::table(_self, _self);
 
     match table.find(id) {
         Some(cursor) => {
-            let mut row = cursor.get().assert("read");
-            eosio_assert(
+            let mut row = cursor.get().check("read");
+            check(
                 account == row.account,
                 "ID already exists but account is not the owner",
             );
-            eosio_assert(url != row.url, "ID already exists but URL hasn't changed");
+            check(url != row.url, "ID already exists but URL hasn't changed");
             row.url = url;
-            cursor.modify(None, &row).assert("write");
+            cursor.modify(None, &row).check("write");
         }
         None => {
             let row = Url { id, url, account };
-            table.emplace(_self, &row).assert("write");
+            table.emplace(_self, &row).check("write");
         }
     }
 }
@@ -63,14 +63,14 @@ pub fn unshorten(id: Slug, account: AccountName) {
 
     let _self = AccountName::receiver();
     let table = Url::table(_self, _self);
-    let cursor = table.find(id).assert("no URL found with that ID");
-    let row = cursor.get().assert("read");
-    eosio_assert(
+    let cursor = table.find(id).check("no URL found with that ID");
+    let row = cursor.get().check("read");
+    check(
         account == row.account,
         "ID already exists but account is not the owner",
     );
 
-    cursor.erase().assert("read");
+    cursor.erase().check("read");
 }
 
 eosio_abi!(shorten, unshorten);

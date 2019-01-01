@@ -6,21 +6,34 @@ use web_sys::{History, Window};
 pub enum Route<'a> {
     Home,
     Url(Slug),
-    // UrlInfo(Slug),
+    UrlInfo(Slug),
     Error(&'a str),
 }
 
 impl From<&'_ str> for Route<'_> {
     fn from(pathname: &str) -> Self {
         match pathname.get(1..) {
-            Some(slug) => {
-                if slug == "" {
-                    Route::Home
+            Some(tail) => {
+                if tail == "" {
+                    return Route::Home;
+                }
+
+                let is_info = tail.ends_with("/info");
+                let slug = if is_info {
+                    tail.trim_end_matches("/info")
                 } else {
-                    match eosio::sys::string_to_name(slug) {
-                        Ok(num) => Route::Url(num.into()),
-                        Err(_) => Route::Error("invalid slug"),
+                    tail
+                };
+
+                match eosio::sys::string_to_name(slug) {
+                    Ok(num) => {
+                        if is_info {
+                            Route::UrlInfo(num.into())
+                        } else {
+                            Route::Url(num.into())
+                        }
                     }
+                    Err(_) => Route::Error("invalid slug"),
                 }
             }
             None => Route::Home,
@@ -31,6 +44,26 @@ impl From<&'_ str> for Route<'_> {
 impl From<String> for Route<'_> {
     fn from(pathname: String) -> Self {
         Self::from(pathname.as_str())
+    }
+}
+
+impl ToString for Route<'_> {
+    fn to_string(&self) -> String {
+        match *self {
+            Route::Home => "/".to_string(),
+            Route::Url(slug) => {
+                let mut s = "/".to_string();
+                s.push_str(slug.to_string().as_str());
+                s
+            }
+            Route::UrlInfo(slug) => {
+                let mut s = "/".to_string();
+                s.push_str(slug.to_string().as_str());
+                s.push_str("/info");
+                s
+            }
+            Route::Error(_) => "/?error".to_string(),
+        }
     }
 }
 

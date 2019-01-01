@@ -6,25 +6,25 @@
     clippy::cargo
 )]
 
-mod error_page;
-mod home_page;
+mod constants;
+mod context;
+mod pages;
 mod route;
 mod scatter;
-mod url_page;
 mod utils;
-mod wallet;
 
+use crate::context::{Context, ScatterState};
+use crate::pages::Page;
 use crate::route::Route;
+use crate::scatter::Scatter;
 use cfg_if::cfg_if;
 use eosio::*;
+use futures::future::Future;
 use js_sys::Promise;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::future_to_promise;
 use web_sys::{Document, Event, EventTarget, Location, Window};
-
-pub const CHAIN_ID: &str = "cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f";
-pub const NODE: &str = "https://127.0.0.1:8889";
-pub const ACCOUNT: AccountName = AccountName(n!(urlshortener));
 
 cfg_if! {
     // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -35,39 +35,43 @@ cfg_if! {
     }
 }
 
-pub struct Context<'a> {
-    pub window: &'a Window,
-    pub document: &'a Document,
-    pub location: &'a Location,
-}
-
 #[wasm_bindgen]
 pub fn run() -> Result<(), JsValue> {
     crate::utils::set_panic_hook();
-    let window = web_sys::window().expect("no global `window` exists");
-    let document = window.document().expect("should have a document on window");
-    let body = document.body().expect("document should have a body");
 
-    let location = window.location();
-    let pathname = location.pathname().expect("unable to get pathname");
-    // web_sys::console::log_1(&pathname.into());
+    let mut ctx = Context::new()?;
+    let pathname = ctx.location.pathname().expect("unable to get pathname");
 
-    let context = Context {
-        window: &window,
-        document: &document,
-        location: &location,
-    };
+    // .and_then(|scatter| {
+    //     let rf = RequiredFields {
+    //         accounts: Some(vec![Network {
+    //             chain_id: Some(crate::CHAIN_ID),
+    //             protocol: None,
+    //             blockchain: Some("eos"),
+    //             host: None,
+    //             port: None,
+    //         }]),
+    //     };
+    //     scatter.get_identity(rf).map(|id| (scatter, id))
+    // })
 
     let page = match Route::from(pathname) {
-        Route::Home => crate::home_page::HomePage::render(&context)?,
-        Route::Url(slug) => crate::url_page::UrlPage::new(&context, &slug).render()?,
-        Route::Error(msg) => crate::error_page::render(&context, msg)?,
+        Route::Home => pages::home::Page::new(()).render(&ctx)?,
+        Route::Url(slug) => pages::url::Page::new(&slug).render(&ctx)?,
+        Route::UrlInfo(slug) => pages::url_info::Page::new(&slug).render(&ctx)?,
+        Route::Error(msg) => pages::error::Page::new(msg).render(&ctx)?,
     };
 
+    Scatter::use_eos();
+
+    let body = ctx.document.body().expect("document should have a body");
     body.append_child(&page)?;
 
-    let history = window.history()?;
-    let router = crate::route::Agent { window, history };
+    let history = ctx.window.history()?;
+    let router = crate::route::Agent {
+        window: ctx.window.clone(),
+        history,
+    };
     // router.push_state("HI", "/balls");
 
     // let el1 = document.create_element("a")?;
@@ -87,5 +91,24 @@ pub fn run() -> Result<(), JsValue> {
     // el2.set_inner_html("Page 2 link");
     // body.append_child(&el2);
 
+    // let fut = Scatter::connect(crate::APP_NAME)
+    //     .map(move |scatter| {
+    //         context.scatter = Some(scatter);
+    //         JsValue::NULL
+    //     })
+    //     .map_err(|_| JsValue::NULL);
+    // future_to_promise(fut);
+    let ctx2 = ctx.clone();
+    let a = Closure::wrap(Box::new(move || {
+        web_sys::console::log_2(
+            &JsValue::from_str("!!! is not_asked"),
+            &JsValue::from_bool(ctx2.scatter.is_not_asked()),
+        );
+    }) as Box<dyn Fn()>);
+    web_sys::window().expect("balls")
+        .set_interval_with_callback_and_timeout_and_arguments_0(a.as_ref().unchecked_ref(), 1000)?;
+        a.forget();
+
+    ctx.load_scatter();
     Ok(())
 }

@@ -38,7 +38,8 @@ module.exports = {
   },
   output: {
     path: path.resolve(DIST_DIR),
-    filename: "[name].js"
+    filename: "[name].js",
+    publicPath: "/"
   },
   module: {
     rules: [
